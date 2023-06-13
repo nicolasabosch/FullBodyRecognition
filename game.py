@@ -7,19 +7,16 @@ import itertools
 from collections import Counter
 from collections import deque
 
-
 import cv2 as cv
 import numpy as np
 import mediapipe as mp
-
-mp_drawing = mp.solutions.drawing_utils
-mp_pose = mp.solutions.pose
 
 from utils import CvFpsCalc
 from model import KeyPointClassifier
 from model import PointHistoryClassifier
 
-cap = cv.VideoCapture(0)
+mp_drawing = mp.solutions.drawing_utils
+mp_pose = mp.solutions.pose
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -58,7 +55,7 @@ def main():
     use_brect = True
 
     # カメラ準備 ###############################################################
-    cap = cv.VideoCapture(cap_device)
+    cap = cv.VideoCapture(0)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
 
@@ -101,6 +98,42 @@ def main():
     finger_gesture_history = deque(maxlen=history_length)
 
     #  ########################################################################
+    with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            
+            # Recolor image to RGB
+            image = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+            image.flags.writeable = False
+        
+            # Make detection
+            results = pose.process(image)
+        
+            # Recolor back to BGR
+            image.flags.writeable = True
+            image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
+            
+            # Extract landmarks
+        try:
+            landmarks = results.pose_landmarks.landmark
+            
+            # Get coordinates
+            shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+            elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+            wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+                   
+        except:
+            pass
+        
+        
+        # Render detections
+        mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
+                                mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2) 
+                                 )               
+        
+        
+    cv.imshow('Mediapipe Feed', image)
     mode = 0
 
     while True:
@@ -178,60 +211,12 @@ def main():
 
         debug_image = draw_point_history(debug_image, point_history)
         debug_image = draw_info(debug_image, fps, mode, number)
-       
-        with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-            while cap.isOpened():
-                ret, frame = cap.read()
-                
-                # Recolor image to RGB
-                image = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-                image.flags.writeable = False
-            
-                # Make detection
-                results = pose.process(image)
-            
-                # Recolor back to BGR
-                image.flags.writeable = True
-                image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
-                
-        # Extract landmarks
-        try:
-            landmarks = results.pose_landmarks.landmark
-            
-            # Get coordinates
-            shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
-            elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
-            wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
-            
-            
-            
-                       
-        except:
-            pass
-        
-        
-        # Render detections
-        mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-                                mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
-                                mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2) 
-                                 )               
-        
-        cv.imshow('Mediapipe Feed', image)
-        cv.imshow('Hand Gesture Recognition', debug_image)
-
-        cap.release()
-        cv.destroyAllWindows()
-
-        if cv.waitKey(10) & 0xFF == ord('q'):
-            break
-
-
-if __name__ == '__main__':
-    main()
-
 
         # 画面反映 #############################################################
+        cv.imshow('Hand Gesture Recognition', debug_image)
     
+    cap.release()
+    cv.destroyAllWindows()
 
 
 def select_mode(key, mode):
@@ -592,3 +577,6 @@ def draw_info(image, fps, mode, number):
                        cv.LINE_AA)
     return image
 
+
+if __name__ == '__main__':
+    main()
