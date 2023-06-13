@@ -55,7 +55,7 @@ def main():
     use_brect = True
 
     # カメラ準備 ###############################################################
-    cap = cv.VideoCapture(0)
+    cap = cv.VideoCapture(cap_device)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
 
@@ -114,16 +114,16 @@ def main():
             image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
             
             # Extract landmarks
-        try:
-            landmarks = results.pose_landmarks.landmark
+            try:
+                landmarks = results.pose_landmarks.landmark
             
             # Get coordinates
-            shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
-            elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
-            wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+                shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+                elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+                wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
                    
-        except:
-            pass
+            except:
+                pass
         
         
         # Render detections
@@ -214,9 +214,9 @@ def main():
 
         # 画面反映 #############################################################
         cv.imshow('Hand Gesture Recognition', debug_image)
+        cv.destroyAllWindows()
     
     cap.release()
-    cv.destroyAllWindows()
 
 
 def select_mode(key, mode):
@@ -578,5 +578,5 @@ def draw_info(image, fps, mode, number):
     return image
 
 
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+main()
